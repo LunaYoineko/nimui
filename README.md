@@ -266,53 +266,33 @@ buf.drawBox(5, 3, 30, 10, style(fg = colBlue), bsRounded)
 | `bsRounded` | `╭╮╰╯─│` |
 | `bsBold` | `┏┓┗┛━┃` |
 
-## 完全な例: カウンターアプリ
+## サンプル
 
-```nim
-import std/asyncdispatch
-import nimui
+`examples/` ディレクトリに難易度別のサンプルがあります:
 
-var count = 0
+| ファイル | 難易度 | 内容 |
+|---|---|---|
+| `hello.nim` | 初級 | 最小限の「Hello World」 |
+| `counter.nim` | 初中級 | カウンター + プログレスバー |
+| `dashboard.nim` | 中級 | 複数パネル、カラム配置、ステータス表示 |
+| `todo.nim` | 上級 | インタラクティブ TODO リスト |
 
-let app = newApp()
+実行するには:
 
-proc build(): Widget =
-  vbox(
-    header("🚀 Nimui v0.1.0", fg = colWhite, bg = colBlue, bold = true),
-    center(40, 10,
-      label(" [ Counter Widget ] ", fg = colPurple, bold = true),
-      label(""),
-      label("Press SPACE to increment counter.", fg = colText),
-      label(""),
-      label("Current Count: " & $count, fg = colGreen, bold = true),
-      label(""),
-      progress(count.float, max = 20.0, fg = colBlue)
-    ),
-    footer(" Q: Quit | SPACE: Increment ", fg = colTextMuted, bg = colBgDark)
-  )
-
-app.onKey(' ', proc() = inc count)
-app.onKey('q', proc() = app.quit())
-app.onKey('Q', proc() = app.quit())
-
-waitFor app.run(build)
+```bash
+nim c -r examples/hello.nim
 ```
 
 ## トラブルシュート
 
 ### `cannot open file: nimui`
 
-`nimble.paths` の `--noNimblePath` が原因の場合があります。
+`.nimble` ファイルに `requires "nimui >= 0.1.0"` が記述されていない場合に発生します。
 
-`nimble.paths` を開いて、`--noNimblePath` の行を削除してください:
+`myapp.nimble` を開いて、dependencies セクションに以下を追加してください:
 
 ```
-# 修正前:
---noNimblePath
---path:"/path/to/your/src"
-
-# 修正後:
---path:"/path/to/your/src"
+requires "nimui >= 0.1.0"
 ```
 
 ## ライセンス
