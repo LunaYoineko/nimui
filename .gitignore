@@ -12,3 +12,4 @@ nimble.cache
 # OS
 .DS_Store
 Thumbs.db
+examples/counter
