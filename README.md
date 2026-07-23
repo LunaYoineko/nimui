@@ -14,7 +14,7 @@
 ## インストール
 
 ```bash
-nimble install nimui
+nimble install https://github.com/LunaYoineko/nimui
 ```
 
 ## クイックスタート
