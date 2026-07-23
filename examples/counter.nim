@@ -60,7 +60,7 @@ let app = newApp()
 proc build(): Widget =
   vbox(
     # ヘッダーバー: アプリ名を白文字・青背景で表示
-    header("🚀 Nimui v0.1.0", fg = colWhite, bg = colBlue, bold = true),
+    header("Nimui v0.1.0", fg = colWhite, bg = colBlue, bold = true),
 
     # 中央寄せボックス (幅40、高さ10)
     center(40, 10,

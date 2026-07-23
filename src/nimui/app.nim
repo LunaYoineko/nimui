@@ -146,7 +146,47 @@ proc run*(app: App, build: proc(): Widget) {.async.} =
 
         # 4. 新しいバッファを作成してウィジェットを描画
         let nextBuffer = newBuffer(w, h)
-        widget.render(nextBuffer, 0, 0, w, h)
+
+        # --- 自動ドッキング ---
+        # ルートがvboxの場合、header/footerを自動的に上下に配置する
+        # header → 画面最上部 (y=0)
+        # footer → 画面最下部 (y=h-1)
+        # それ以外の子 → 中間領域に描画
+        if widget.kind == wkVBox:
+            var dockedHeader: Widget = nil
+            var dockedFooter: Widget = nil
+            var contentChildren: seq[Widget] = @[]
+
+            # vbox の子を走査して header / footer を分離
+            for child in widget.children:
+                case child.kind
+                of wkHeader: dockedHeader = child
+                of wkFooter: dockedFooter = child
+                else: contentChildren.add(child)
+
+            # ヘッダーを最上部に描画 (全幅、1行)
+            if dockedHeader != nil:
+                dockedHeader.render(nextBuffer, 0, 0, w, 1)
+
+            # フッターを最下部に描画 (全幅、1行)
+            if dockedFooter != nil:
+                dockedFooter.render(nextBuffer, 0, h - 1, w, 1)
+
+            # コンテンツ領域の計算
+            let contentY = if dockedHeader != nil: 1 else: 0
+            let contentH = (if dockedFooter != nil: h - 1 else: h) - contentY
+
+            # 残りの子をコンテンツとして描画
+            if contentChildren.len == 1:
+                # 子が1つならそのまま描画
+                contentChildren[0].render(nextBuffer, 0, contentY, w, contentH)
+            elif contentChildren.len > 1:
+                # 複数ならvboxとして描画
+                let contentVbox = Widget(kind: wkVBox, children: contentChildren, gap: widget.gap)
+                contentVbox.render(nextBuffer, 0, contentY, w, contentH)
+        else:
+            # ルートがvbox以外なら従来通り全体に描画
+            widget.render(nextBuffer, 0, 0, w, h)
 
         # 5. 差分描画: 前フレーム(currentBuffer)と比較して変化した部分だけ描画
         renderDiff(app.currentBuffer, nextBuffer)
