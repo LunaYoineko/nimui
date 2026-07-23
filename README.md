@@ -16,7 +16,7 @@
 ### 1. nimui をインストール
 
 ```bash
-nimble install github.com/LunaYoineko/nimui
+nimble install https://github.com/LunaYoineko/nimui
 ```
 
 ### 2. プロジェクトに依存関係を追加
