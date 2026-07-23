@@ -1,0 +1,14 @@
+# Nimble
+*.nimble.lock
+nimcache/
+nimble.cache
+
+# Build output
+*.exe
+*.out
+*.app
+!examples/*.nim
+
+# OS
+.DS_Store
+Thumbs.db
