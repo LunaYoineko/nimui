@@ -6,6 +6,7 @@
 
 - **宣言的な API** — コンポーネントを組み立てるだけで UI を構築
 - **自動レイアウト** — `vbox`, `hbox`, `center` で座標計算不要
+- **自動ドッキング** — header は一番上、footer は一番下に自動配置
 - **差分描画** — 変化した部分だけ描画し、60FPS で滑らかな描画
 - **TrueColor** — 24bit カラー対応
 - **Unicode 対応** — 日本語や絵文字も正しく表示
@@ -13,80 +14,23 @@
 
 ## インストール
 
-### 1. nimui をインストール
-
 ```bash
-nimble install https://github.com/LunaYoineko/nimui
-```
-
-### 2. プロジェクトに依存関係を追加
-
-プロジェクトの `.nimble` ファイルに以下を追記:
-
-```nim
-requires "nimui >= 0.1.0"
-```
-
-### 3. nimble setup を実行
-
-```bash
-nimble setup
-```
-
-### 4. nimble.paths を修正（重要）
-
-`nimble setup` が生成する `nimble.paths` に `--noNimblePath` が含まれています。
-これを削除しないと `import nimui` が失敗します。
-
-`nimble.paths` を開いて、`--noNimblePath` の行を削除してください:
-
-```
-# 修正前:
---noNimblePath              ← 削除する
---path:"/path/to/your/src"
-
-# 修正後:
---path:"/path/to/your/src"
-```
-
-### 5. コンパイル・実行
-
-```bash
-nim c -r src/yourapp.nim
-```
-
-### よくあるエラー
-
-**`cannot open file: nimui`**
-
-`nimble.paths` に `--noNimblePath` がある場合に発生します。
-上記の手順4で削除してください。
-
-## クイックスタート
-
-### セットアップ
-
-```bash
-# 1. nimui をインストール
-nimble install github.com/LunaYoineko/nimui
-
-# 2. プロジェクト作成
+# 1. プロジェクト作成
 mkdir myapp && cd myapp
 nimble init
 
+# 2. nimui をインストール
+nimble install https://github.com/LunaYoineko/nimui
+
 # 3. .nimble ファイルに依存関係を追記
-# myapp.nimble に以下を追加:
+# myapp.nimble の dependencies セクションに以下を追加:
 #   requires "nimui >= 0.1.0"
 
-# 4. nimble setup を実行
-nimble setup
-
-# 5. nimble.paths から --noNimblePath を削除
-
-# 6. ソースファイルを作成
+# 4. コンパイル・実行
+nim c -r src/myapp.nim
 ```
 
-### ソースコード
+## クイックスタート
 
 ```nim
 import std/asyncdispatch
@@ -111,6 +55,8 @@ app.onKey('q', proc() = app.quit())
 
 waitFor app.run(build)
 ```
+
+header と footer は自動的に画面の上下に配置されます。
 
 ## コンポーネント
 
@@ -187,7 +133,7 @@ center(40, 10,
 
 ### header — ヘッダーバー
 
-画面上部に全幅のバーを表示します。
+画面上部に全幅のバーを表示します。vbox の子として使うと自動的に一番上に配置されます。
 
 ```nim
 header("My App", fg = colWhite, bg = colBlue, bold = true)
@@ -195,7 +141,7 @@ header("My App", fg = colWhite, bg = colBlue, bold = true)
 
 ### footer — フッターバー
 
-画面下部に全幅のバーを表示します。
+画面下部に全幅のバーを表示します。vbox の子として使うと自動的に一番下に配置されます。
 
 ```nim
 footer("Q: Quit | SPACE: Action", fg = colTextMuted, bg = colBgDark)
@@ -213,7 +159,7 @@ progress(5.0, max = 10.0, fg = colCyan)
 |---|---|---|
 | `value` | `float` | 現在値 |
 | `max` | `float` | 最大値（デフォルト: 1.0） |
-| `fg` | `float` | 塗りつぶし部分の色 |
+| `fg` | `Color` | 塗りつぶし部分の色 |
 
 ### separator — 区切り線
 
@@ -350,6 +296,23 @@ app.onKey('q', proc() = app.quit())
 app.onKey('Q', proc() = app.quit())
 
 waitFor app.run(build)
+```
+
+## トラブルシュート
+
+### `cannot open file: nimui`
+
+`nimble.paths` の `--noNimblePath` が原因の場合があります。
+
+`nimble.paths` を開いて、`--noNimblePath` の行を削除してください:
+
+```
+# 修正前:
+--noNimblePath
+--path:"/path/to/your/src"
+
+# 修正後:
+--path:"/path/to/your/src"
 ```
 
 ## ライセンス
