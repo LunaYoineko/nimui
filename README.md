@@ -13,11 +13,80 @@
 
 ## インストール
 
+### 1. nimui をインストール
+
 ```bash
-nimble install nimui
+nimble install github.com/LunaYoineko/nimui
 ```
 
+### 2. プロジェクトに依存関係を追加
+
+プロジェクトの `.nimble` ファイルに以下を追記:
+
+```nim
+requires "nimui >= 0.1.0"
+```
+
+### 3. nimble setup を実行
+
+```bash
+nimble setup
+```
+
+### 4. nimble.paths を修正（重要）
+
+`nimble setup` が生成する `nimble.paths` に `--noNimblePath` が含まれています。
+これを削除しないと `import nimui` が失敗します。
+
+`nimble.paths` を開いて、`--noNimblePath` の行を削除してください:
+
+```
+# 修正前:
+--noNimblePath              ← 削除する
+--path:"/path/to/your/src"
+
+# 修正後:
+--path:"/path/to/your/src"
+```
+
+### 5. コンパイル・実行
+
+```bash
+nim c -r src/yourapp.nim
+```
+
+### よくあるエラー
+
+**`cannot open file: nimui`**
+
+`nimble.paths` に `--noNimblePath` がある場合に発生します。
+上記の手順4で削除してください。
+
 ## クイックスタート
+
+### セットアップ
+
+```bash
+# 1. nimui をインストール
+nimble install github.com/LunaYoineko/nimui
+
+# 2. プロジェクト作成
+mkdir myapp && cd myapp
+nimble init
+
+# 3. .nimble ファイルに依存関係を追記
+# myapp.nimble に以下を追加:
+#   requires "nimui >= 0.1.0"
+
+# 4. nimble setup を実行
+nimble setup
+
+# 5. nimble.paths から --noNimblePath を削除
+
+# 6. ソースファイルを作成
+```
+
+### ソースコード
 
 ```nim
 import std/asyncdispatch
