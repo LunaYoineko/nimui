@@ -20,11 +20,11 @@ mkdir myapp && cd myapp
 nimble init
 
 # 2. nimui をインストール
-nimble install https://github.com/LunaYoineko/nimui
+nimble install https://github.com/LunaYoineko/nimui@#latest
 
 # 3. .nimble ファイルに依存関係を追記
 # myapp.nimble の dependencies セクションに以下を追加:
-#   requires "nimui >= 0.1.0"
+#   requires "nimui"
 
 # 4. コンパイル・実行
 nim c -r src/myapp.nim
@@ -287,12 +287,12 @@ nim c -r examples/hello.nim
 
 ### `cannot open file: nimui`
 
-`.nimble` ファイルに `requires "nimui >= 0.1.0"` が記述されていない場合に発生します。
+`.nimble` ファイルに `requires "nimui"` が記述されていない場合に発生します。
 
 `myapp.nimble` を開いて、dependencies セクションに以下を追加してください:
 
 ```
-requires "nimui >= 0.1.0"
+requires "nimui"
 ```
 
 ## ライセンス
