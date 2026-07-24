@@ -1,7 +1,7 @@
 import std/unittest
-import nimui
+import nimact
 
-suite "nimui Widget & Layout Tests":
+suite "nimact Widget & Layout Tests":
     
     test "vbox correctly groups header, footer, and content":
         let h = header("Header")

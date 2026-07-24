@@ -1,7 +1,7 @@
 ## =============================================================================
-## nimui.nim — ライブラリのエントリポイント
+## nimact.nim — ライブラリのエントリポイント
 ##
-## ユーザーが `import nimui` とした際に、このファイルが読み込まれる
+## ユーザーが `import nimact` とした際に、このファイルが読み込まれる
 ## 全ての公開APIをここから再エクスポートする
 ##
 ## ユーザーが使うことになる型・関数:
@@ -15,15 +15,15 @@
 ##   KeyKind, KeyEvent                    (input.nim via event.nim)
 ##
 ## 使用例:
-##   import nimui
+##   import nimact
 ##   let app = newApp()
 ##   app.onKey('q', proc() = app.quit())
 ##   waitFor app.run(proc(): Widget = label("Hello"))
 ## =============================================================================
 
-import nimui/app
-import nimui/components/widget
-import nimui/core/buffer
-import nimui/core/event
+import nimact/app
+import nimact/components/widget
+import nimact/core/buffer
+import nimact/core/event
 
 export app, widget, buffer, event

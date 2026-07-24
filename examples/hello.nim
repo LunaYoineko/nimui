@@ -1,13 +1,13 @@
 ## =============================================================================
 ## examples/hello.nim
-## Nimui の最小サンプル: Hello World
+## nimact の最小サンプル: Hello World
 ##
 ## 操作方法:
 ##   Q キー: アプリケーションを終了
 ## =============================================================================
 
 import std/asyncdispatch
-import nimui
+import nimact
 
 let app = newApp()
 

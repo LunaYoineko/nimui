@@ -17,3 +17,5 @@ nimble.develop
 nimble.paths
 nimbledeps
 /tests/test_buffer
+/nimble.paths
+/nimble.paths

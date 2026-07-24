@@ -1,9 +1,9 @@
 import std/unittest
 import std/strutils
-import nimui/core/buffer
-import nimui/components/widget
+import nimact/core/buffer
+import nimact/components/widget
 
-suite "nimui Buffer Render Tests":
+suite "nimact Buffer Render Tests":
 
   test "footer renders at the bottom of the buffer":
     let width = 80
