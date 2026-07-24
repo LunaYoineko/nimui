@@ -1,4 +1,4 @@
-# Nimui
+# Nimact
 
 モダンでシンプルな Nim TUI フレームワーク。コンポーネントベースで宣言的に UI を構築できます。
 
@@ -19,16 +19,16 @@
 mkdir myapp && cd myapp
 nimble init
 
-# 2. nimui をインストール
-nimble install https://github.com/LunaYoineko/nimui@#head
+# 2. nimact をインストール
+nimble install https://github.com/LunaYoineko/nimact@#head
 
 or 
 
-nimble install --fresh https://github.com/LunaYoineko/nimui
+nimble install --fresh https://github.com/LunaYoineko/nimact
 
 # 3. .nimble ファイルに依存関係を追記
 # myapp.nimble の dependencies セクションに以下を追加:
-#   requires "nimui"
+#   requires "nimact"
 
 # 4. コンパイル・実行
 nim c -r src/myapp.nim
@@ -38,7 +38,7 @@ nim c -r src/myapp.nim
 
 ```nim
 import std/asyncdispatch
-import nimui
+import nimact
 
 var count = 0
 
@@ -289,14 +289,14 @@ nim c -r examples/hello.nim
 
 ## トラブルシュート
 
-### `cannot open file: nimui`
+### `cannot open file: nimact`
 
-`.nimble` ファイルに `requires "nimui"` が記述されていない場合に発生します。
+`.nimble` ファイルに `requires "nimact"` が記述されていない場合に発生します。
 
 `myapp.nimble` を開いて、dependencies セクションに以下を追加してください:
 
 ```
-requires "nimui"
+requires "nimact"
 ```
 
 ## ライセンス
