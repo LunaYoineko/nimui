@@ -20,11 +20,7 @@ mkdir myapp && cd myapp
 nimble init
 
 # 2. nimact をインストール
-nimble install https://github.com/LunaYoineko/nimact@#head
-
-or 
-
-nimble install --fresh https://github.com/LunaYoineko/nimact
+nimble install https://github.com/LunaYoineko/nimact
 
 # 3. .nimble ファイルに依存関係を追記
 # myapp.nimble の dependencies セクションに以下を追加:
