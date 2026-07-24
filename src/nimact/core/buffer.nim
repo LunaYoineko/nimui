@@ -153,9 +153,9 @@ proc drawString*(buf: Buffer, x, y: int, str: string, style: Style = style()) =
     var currX = x
     for rune in str.runes:
         if currX >= buf.width: break
-        
         let w = runeWidth(rune)
-        buf.setCell(currX, y, newCell($rune, style))
+        
+        buf.setCell(currX, y, newCell(rune.toUTF8, style))
         
         # 幅が2の場合は、隣のセルを空文字で埋めて崩れを防ぐ
         if w == 2 and currX + 1 < buf.width:
