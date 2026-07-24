@@ -13,3 +13,7 @@ nimble.cache
 .DS_Store
 Thumbs.db
 examples/counter
+nimble.develop
+nimble.paths
+nimbledeps
+/tests/test_buffer

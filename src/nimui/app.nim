@@ -126,73 +126,81 @@ proc run*(app: App, build: proc(): Widget) {.async.} =
 
     app.running = true
 
-    # ターミナルサイズを取得してバッファを初期化
-    let (w, h) = getTerminalSize()
-    app.currentBuffer = newBuffer(w, h)
-
     # 画面をクリア (最初の一描画)
     clearScreen()
 
+    let (initW, initH) = getTerminalSize()
+    app.currentBuffer = newBuffer(initW, initH)
+    
     # メインループ
     while app.running:
-        # 1. キー入力を取得 (ノンブロッキング)
-        let ev = pollKey()
+        # 毎フレームターミナルサイズを取得(リサイズ対応)
+        let (w, h) = getTerminalSize()
 
-        # 2. イベントをハンドラにディスパッチ
+        # キー入力を取得 (ノンブロッキング)
+        let ev = pollKey()
+        # イベントをハンドラにディスパッチ
         app.eventBus.dispatch(ev)
 
-        # 3. ユーザー定義の build() を呼び出してウィジェットツリーを構築
-        let widget = build()
-
-        # 4. 新しいバッファを作成してウィジェットを描画
+        # ユーザー定義の build() を呼び出してウィジェットツリーを構築
+        let rootWidget = build()
+        # 新しいバッファを作成してウィジェットを描画
         let nextBuffer = newBuffer(w, h)
 
-        # --- 自動ドッキング ---
-        # ルートがvboxの場合、header/footerを自動的に上下に配置する
-        # header → 画面最上部 (y=0)
-        # footer → 画面最下部 (y=h-1)
-        # それ以外の子 → 中間領域に描画
-        if widget.kind == wkVBox:
-            var dockedHeader: Widget = nil
-            var dockedFooter: Widget = nil
+        # ヘッダー / フッター と ルートvbox の探索
+        var targetVBox: Widget = nil
+        var dockedHeader: Widget = nil
+        var dockedFooter: Widget = nil
+        
+        # ルート自身がvboxか、あるいはツリー直下を探索して最初に見つかったvbox / 特殊ウィジェットを探す
+        if rootWidget.kind == wkVBox:
+            targetVBox = rootWidget
+        else:
+            # centerなどの子要素にvboxがある場合を検索
+            for child in rootWidget.children:
+                targetVBox = child
+                break
+        
+        if targetVBox != nil:
             var contentChildren: seq[Widget] = @[]
-
-            # vbox の子を走査して header / footer を分離
-            for child in widget.children:
+            for child in targetVBox.children:
                 case child.kind
                 of wkHeader: dockedHeader = child
                 of wkFooter: dockedFooter = child
                 else: contentChildren.add(child)
-
-            # ヘッダーを最上部に描画 (全幅、1行)
+                
+            # 描画位置の決定
+            let headerH = if dockedHeader != nil: 1 else: 0
+            let footerH = if dockedFooter != nil: 1 else: 0
+            
+            # ヘッダーを最上部(y = 0)に固定描画
             if dockedHeader != nil:
                 dockedHeader.render(nextBuffer, 0, 0, w, 1)
-
-            # フッターを最下部に描画 (全幅、1行)
+                
+            # フッターを画面の最下部(y = h - 1)に確実に固定描画
             if dockedFooter != nil:
                 dockedFooter.render(nextBuffer, 0, h - 1, w, 1)
-
-            # コンテンツ領域の計算
-            let contentY = if dockedHeader != nil: 1 else: 0
-            let contentH = (if dockedFooter != nil: h - 1 else: h) - contentY
-
-            # 残りの子をコンテンツとして描画
+                
+            # 中間コンテンツ領域の描画
+            let contentY = headerH
+            let contentH = max(0, h - headerH - footerH)
+            
             if contentChildren.len == 1:
-                # 子が1つならそのまま描画
                 contentChildren[0].render(nextBuffer, 0, contentY, w, contentH)
             elif contentChildren.len > 1:
-                # 複数ならvboxとして描画
-                let contentVbox = Widget(kind: wkVBox, children: contentChildren, gap: widget.gap)
+                let contentVbox = Widget(kind: wkVBox, children: contentChildren, gap: targetVBox.gap)
                 contentVbox.render(nextBuffer, 0, contentY, w, contentH)
-        else:
-            # ルートがvbox以外なら従来通り全体に描画
-            widget.render(nextBuffer, 0, 0, w, h)
-
-        # 5. 差分描画: 前フレーム(currentBuffer)と比較して変化した部分だけ描画
-        renderDiff(app.currentBuffer, nextBuffer)
-
-        # 6. 描画済みバッファを保存 (次のフレームの差分比較用)
-        app.currentBuffer = nextBuffer
-
-        # 7. 約16ms待機 (60FPS相当)
-        await sleepAsync(16)
+            else:
+                # vboxが存在しない場合は画面全体にそのまま描画
+                rootWidget.render(nextBuffer, 0, 0, w, h)
+                
+            # 差分描画 & バッファ更新
+            if app.currentBuffer == nil or app.currentBuffer.width != w or app.currentBuffer.height != h:
+                app.currentBuffer = newBuffer(w, h)
+                
+            renderDiff(app.currentBuffer, nextBuffer)
+            app.currentBuffer = nextBuffer
+            
+            
+            # 60FPSウェイト
+            await sleepAsync(16)

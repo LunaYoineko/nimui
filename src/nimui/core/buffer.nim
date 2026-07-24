@@ -113,6 +113,13 @@ proc setCell*(buf: Buffer, x, y: int, cell: Cell) =
     if x >= 0 and x < buf.width and y >= 0 and y < buf.height:
         buf.cells[y * buf.width + x] = cell
 
+        
+## 指定位置のCellを取得する(範囲外なら安全に空セルを返す)
+proc getCell*(buf: Buffer, x, y: int): Cell =
+    if x >= 0 and x < buf.width and y >= 0 and y < buf.height:
+        return buf.cells[y * buf.width + x]
+    else:
+        return newCell()
 # =============================================================================
 # 低レベル描画関数
 # =============================================================================
