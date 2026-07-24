@@ -64,6 +64,9 @@ type
         bg*: Color    ## 背景色
         bold*: bool   ## 太字にするかどうか (ANSI SGR: \e[1m)
         dim*: bool    ## 暗く表示するかどうか (ANSI SGR: \e[2m)
+        italic*: bool ## 斜体 (ANSI: \e[3m)
+        underline*: bool ## 下線 (ANSI: \e[4m)
+        reverse*: bool ## 反転 (ANSI: \e[7m)
 
 ## Styleを作成するユーティリティ関数
 ## 全パラメータはオプションで、未指定時はデフォルト値が使われる
@@ -71,8 +74,8 @@ type
 ##   style(fg = colGreen, bold = true)
 ##   style(fg = colRed, bg = colBgCard)
 proc style*(fg: Color = defaultColor(), bg: Color = defaultColor(),
-            bold: bool = false, dim: bool = false): Style =
-    Style(fg: fg, bg: bg, bold: bold, dim: dim)
+            bold: bool = false, dim: bool = false, italic: bool = false, underline: bool = false, reverse: bool = false): Style =
+    Style(fg: fg, bg: bg, bold: bold, dim: dim, italic: italic, underline: underline, reverse: reverse)
 
 # =============================================================================
 # Cell型: バッファ内の1マスを表す
@@ -129,12 +132,36 @@ proc getCell*(buf: Buffer, x, y: int): Cell =
 ## str: 描画する文字列 (Unicode対応)
 ## style: 文字の装飾スタイル
 ## 画面右端を超える文字は切り捨てられる
+import unicode
+
+## 簡易的な文字幅判定
+proc runeWidth*(r: Rune): int =
+    let cp = r.int
+    if (cp >= 0x1100 and cp <= 0x115F) or # Hangul Jamo
+        (cp >= 0x2E80 and cp <= 0xA4CF) or # CJK Radicals, Kanji, etc.
+        (cp >= 0xAC00 and cp <= 0xD7A3) or # Hangul Syllables
+        (cp >= 0xF900 and cp <= 0xFAFF) or # CJK Compatibility
+        (cp >= 0xFE10 and cp <= 0xFE19) or # Vertical forms
+        (cp >= 0xFF01 and cp <= 0xFF60) or # Fullwidth Form
+        (cp >= 0xFFE0 and cp <= 0xFFE6) or
+        (cp >= 0x1F300 and cp <= 0x1F64F): # Emoji
+        return 2
+    else:
+        return 1
+
 proc drawString*(buf: Buffer, x, y: int, str: string, style: Style = style()) =
     var currX = x
-    for rune in str:  # Unicodeラーン単位でループ
+    for rune in str.runes:
         if currX >= buf.width: break
+        
+        let w = runeWidth(rune)
         buf.setCell(currX, y, newCell($rune, style))
-        currX.inc
+        
+        # 幅が2の場合は、隣のセルを空文字で埋めて崩れを防ぐ
+        if w == 2 and currX + 1 < buf.width:
+            buf.setCell(currX + 1, y, newCell("", style)) # 結合用ダミー
+            
+        currX += w # 文字幅分進める(1 または 2)
 
 # =============================================================================
 # ボーダースタイル: drawBoxで使用する罫線の種類

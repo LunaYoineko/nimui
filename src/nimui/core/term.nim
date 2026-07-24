@@ -197,6 +197,9 @@ proc ansiStyle(s: Style): string =
     var res = "\e[0m"             # まず全スタイルをリセット
     if s.bold: res.add("\e[1m")   # 太字
     if s.dim: res.add("\e[2m")    # 暗く表示
+    if s.italic: res.add("\e[3m") # 斜体
+    if s.underline: res.add("\e[4m") # 下線
+    if s.reverse: res.add("\e[7m") # 反転
     # TrueColor前景色 (38;2;R;G;B フォーマット)
     if not s.fg.isDefault:
         res.add("\e[38;2;" & $s.fg.r & ";" & $s.fg.g & ";" & $s.fg.b & "m")
@@ -232,6 +235,10 @@ proc renderDiff*(current, next: Buffer) =
             let cCell = if idx < current.cells.len: current.cells[idx] else: newCell()
             # 次のフレームのセル
             let nCell = next.cells[idx]
+            
+            # 全角文字の2セル目で生成された空文字("")は描画をスキップする
+            if nCell.ch.len == 0:
+                continue
 
             # セルに変化があった場合のみ描画
             if cCell != nCell:
