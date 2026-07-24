@@ -20,7 +20,11 @@ mkdir myapp && cd myapp
 nimble init
 
 # 2. nimui をインストール
-nimble install https://github.com/LunaYoineko/nimui@#latest
+nimble install https://github.com/LunaYoineko/nimui@#head
+
+or 
+
+nimble install --fresh https://github.com/LunaYoineko/nimui
 
 # 3. .nimble ファイルに依存関係を追記
 # myapp.nimble の dependencies セクションに以下を追加:
