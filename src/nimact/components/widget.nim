@@ -181,8 +181,10 @@ proc spacer*(height: int = 1): Widget =
 proc measure*(w: Widget, availableWidth: int): (int, int) =
   case w.kind
   of wkLabel:
-    # テキストのUnicode文字数 (runeLen) を幅として返す
-    (w.labelText.runeLen, 1)
+    var wCount = 0
+    for r in w.labelText.runes:
+        wCount += runeWidth(r)
+    (wCount, 1)
   of wkVBox:
     # 子を縦に積むので、高さは合計、幅は最大値
     var totalH = 0
@@ -243,12 +245,7 @@ proc measure*(w: Widget, availableWidth: int): (int, int) =
 proc render*(w: Widget, buf: Buffer, x, y, width, height: int) =
   case w.kind
   of wkLabel:
-    # テキストの各ラーンを1文字ずつバッファに書き込む
-    var cx = x
-    for rune in w.labelText:
-      if cx >= buf.width: break  # 画面右端を超えたら打ち切り
-      buf.setCell(cx, y, newCell($rune, w.labelStyle))
-      cx.inc
+    buf.drawString(x, y, w.labelText, w.labelStyle)
 
   of wkVBox:
     # 子ウィジェットを上から順に配置
@@ -291,23 +288,14 @@ proc render*(w: Widget, buf: Buffer, x, y, width, height: int) =
     for cx in 0 ..< width:
       if x + cx < buf.width:
         buf.setCell(x + cx, y, newCell(" ", w.barStyle))
-    # テキストを2文字パディングで描画
-    var cx = x + 2
-    for rune in w.barText:
-      if cx >= x + width: break
-      buf.setCell(cx, y, newCell($rune, w.barStyle))
-      cx.inc
+    buf.drawString(x + 2, y, w.barText, w.barStyle)
 
   of wkFooter:
     # ヘッダーと同様の描画 (全幅背景 + テキスト)
     for cx in 0 ..< width:
       if x + cx < buf.width:
         buf.setCell(x + cx, y, newCell(" ", w.barStyle))
-    var cx = x + 2
-    for rune in w.barText:
-      if cx >= x + width: break
-      buf.setCell(cx, y, newCell($rune, w.barStyle))
-      cx.inc
+    buf.drawString(x + 2, y, w.barText, w.barStyle)
 
   of wkProgress:
     # プログレスバーの描画

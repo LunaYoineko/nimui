@@ -155,10 +155,13 @@ proc drawString*(buf: Buffer, x, y: int, str: string, style: Style = style()) =
         if currX >= buf.width: break
         let w = runeWidth(rune)
         
+        if w == 2 and currX + 1 >= buf.width:
+            break
+        
         buf.setCell(currX, y, newCell(rune.toUTF8, style))
         
         # 幅が2の場合は、隣のセルを空文字で埋めて崩れを防ぐ
-        if w == 2 and currX + 1 < buf.width:
+        if w == 2:
             buf.setCell(currX + 1, y, newCell("", style)) # 結合用ダミー
             
         currX += w # 文字幅分進める(1 または 2)
