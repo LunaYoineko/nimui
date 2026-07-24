@@ -16,7 +16,7 @@
 ## =============================================================================
 
 import std/asyncdispatch
-import nimact
+import ../src/nimact
 
 # =============================================================================
 # アプリケーションの状態
@@ -39,7 +39,7 @@ proc build(): Widget =
   vbox(
     header(" Dashboard v0.1.0 ", fg = colWhite, bg = colBlue, bold = true),
 
-    hbox(3,
+    hbox(2,
       # --- 左カラム: 統計情報 ---
       vbox(1,
         label(" [ Requests ] ", fg = colPurple, bold = true),
@@ -53,11 +53,11 @@ proc build(): Widget =
         spacer(1),
         label(" [ Memory ] ", fg = colPurple, bold = true),
         progress(memUsage, max = 100.0, fg = colYellow),
-        label(" " & $memUsage.int & "%", fg = colTextMuted),
+        label(" " & $memUsage.int & "%", fg = colTextMuted)
       ),
 
       # --- 右カラム: ステータス ---
-      vbox(1,
+      vbox(3,
         label(" [ Status ] ", fg = colPurple, bold = true),
         label("  Server:   ", fg = colText),
         label("    ", fg = colGreen, bold = true),

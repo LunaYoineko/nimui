@@ -38,6 +38,7 @@ type
   ## Variant object の discriminant (判別値) として使用する
   WidgetKind* = enum
     wkLabel,      ## テキスト表示
+    wkBox,        ## ボックスパネル
     wkVBox,       ## 縦並びコンテナ
     wkHBox,       ## 横並びコンテナ
     wkCenter,     ## 中央寄せボックス
@@ -62,9 +63,15 @@ type
     of wkLabel:
       labelText*: string      ## 表示するテキスト
       labelStyle*: Style      ## テキストの装飾スタイル
+    of wkBox:
+      boxW*, boxH*: int
+      boxStyle*: Style
+      boxBorder*: BorderStyle
+      boxChildren*: seq[Widget]
     of wkVBox, wkHBox:
       children*: seq[Widget]  ## 子ウィジェットのリスト
       gap*: int               ## 子同士の隙間 (行数/列数)
+      vhboxStyle*: Style
     of wkCenter:
       centerW*, centerH*: int           ## ボックスの幅と高さ
       centerChildren*: seq[Widget]      ## 中心に配置する子ウィジェット
@@ -92,30 +99,49 @@ proc label*(text: string, fg: Color = defaultColor(),
             bg: Color = defaultColor(), bold: bool = false): Widget =
   Widget(kind: wkLabel, labelText: text, labelStyle: style(fg, bg, bold))
 
+## 枠付きボックス(パネル)を作成する
+proc box*(w, h: int, style: Style = style(fg = colBlue),
+          borderType: BorderStyle = bsRounded,
+          children: varargs[Widget]): Widget =
+  Widget(kind: wkBox, boxW: w, boxH: h, boxStyle: style,
+          boxBorder: borderType, boxChildren: @children)
+
 ## 縦並びコンテナを作成する (隙間なし)
 ## 子ウィジェットを上から順に配置する
 ## 使用例: vbox(label("1行目"), label("2行目"))
 proc vbox*(children: varargs[Widget]): Widget =
-  Widget(kind: wkVBox, children: @children, gap: 0)
-
+  Widget(kind: wkVBox, children: @children, gap: 0, vhboxStyle: style())
+          
 ## 縦並びコンテナを作成する (隙間あり)
 ## gap: 子同士の隙間 (行数)
 ## 使用例: vbox(1, label("a"), label("b"))  # 1行空ける
 proc vbox*(gap: int, children: varargs[Widget]): Widget =
-  Widget(kind: wkVBox, children: @children, gap: gap)
+  Widget(kind: wkVBox, children: @children, gap: gap, vhboxStyle: style())
 
+proc vbox*(gap: int, style: Style, children: varargs[Widget]): Widget =
+  Widget(kind: wkVBox, children: @children, gap: gap, vhboxStyle: style)
+  
+proc vbox*(style: Style, children: varargs[Widget]): Widget =
+  Widget(kind: wkVBox, children: @children, gap: 0, vhboxStyle: style)
+  
 ## 横並びコンテナを作成する (隙間なし)
 ## 子ウィジェットを左から順に配置する
 ## 使用例: hbox(label("左"), label("右"))
 proc hbox*(children: varargs[Widget]): Widget =
-  Widget(kind: wkHBox, children: @children, gap: 0)
-
+  Widget(kind: wkHBox, children: @children, gap: 0, vhboxStyle: style())
+  
 ## 横並びコンテナを作成する (隙間あり)
 ## gap: 子同士の隙間 (列数)
 ## 使用例: hbox(2, label("A"), label("B"))  # 2列空ける
 proc hbox*(gap: int, children: varargs[Widget]): Widget =
-  Widget(kind: wkHBox, children: @children, gap: gap)
-
+  Widget(kind: wkHBox, children: @children, gap: gap, vhboxStyle: style())
+  
+proc hbox*(gap: int, style: Style, children: varargs[Widget]): Widget =
+  Widget(kind: wkHBox, children: @children, gap: gap, vhboxStyle: style)
+  
+proc hbox*(style: Style, children: varargs[Widget]): Widget =
+  Widget(kind: wkHBox, children: @children, gap: 0, vhboxStyle: style)
+  
 ## 中央寄せボックスを作成する
 ## w, h: ボックスの幅と高さ
 ## 子ウィジェットはこのボックス内で水平・垂直に中央寄せされる
@@ -185,6 +211,8 @@ proc measure*(w: Widget, availableWidth: int): (int, int) =
     for r in w.labelText.runes:
         wCount += runeWidth(r)
     (wCount, 1)
+  of wkBox:
+    (w.boxW, w.boxH)
   of wkVBox:
     # 子を縦に積むので、高さは合計、幅は最大値
     var totalH = 0
@@ -242,46 +270,96 @@ proc measure*(w: Widget, availableWidth: int): (int, int) =
 ##   - Progress:  塗り済み部分 (█) と未塗り部分 (░) を描画
 ##   - Separator: 全幅に ─ を描画
 ##   - Spacer:    何も描画しない (空間を確保するだけ)
-proc render*(w: Widget, buf: Buffer, x, y, width, height: int) =
+proc render*(w: Widget, buf: Buffer, x, y, width, height: int, parentStyle: Style = style()) =
   case w.kind
   of wkLabel:
-    buf.drawString(x, y, w.labelText, w.labelStyle)
+    var effectiveStyle = w.labelStyle
+    if w.labelStyle.bg.isDefault and not parentStyle.bg.isDefault:
+        effectiveStyle.bg = parentStyle.bg
+    
+    buf.drawString(x, y, w.labelText, effectiveStyle)
 
+  of wkBox:
+    buf.drawBox(x, y, w.boxW, w.boxH, w.boxStyle, w.boxBorder)
+    
+    for cy in 1 ..< (w.boxH - 1):
+        for cx in 1 ..< (w.boxW - 1):
+            if x + cx < buf.width and y + cy < buf.height:
+                buf.setCell(x + cx, y + cy, newCell(" ", w.boxStyle))
+    
+    let innerW = max(1, w.boxW - 2)
+    var cy = 0
+    for child in w.boxChildren:
+      let (_, ch) = child.measure(innerW)
+      child.render(buf, x + 1, y + 1 + cy, innerW, ch, w.boxStyle)
+      cy += ch
+    
   of wkVBox:
+    var currentStyle = parentStyle
+    if not w.vhboxStyle.bg.isDefault:
+        currentStyle.bg = w.vhboxStyle.bg
+      
+    if not w.vhboxStyle.bg.isDefault:
+        for row in 0 ..< height:
+            for col in 0 ..< width:
+                if x + col < buf.width and y + row < buf.height:
+                    buf.setCell(x + col, y + row, newCell(" ", w.vhboxStyle))
+        
+    var totalChildrenH = 0
+    for i, child in w.children:
+        let(_, ch) = child.measure(width)
+        totalChildrenH += ch
+        if i > 0: totalChildrenH += w.gap
+    
+    let offsetY = max(0, (height - totalChildrenH) div 2)
+                    
     # 子ウィジェットを上から順に配置
-    var cy = y
+    var cy = y + offsetY
     for child in w.children:
       let (_, ch) = child.measure(width)  # 子の高さを取得
-      child.render(buf, x, cy, width, ch)  # 子を描画
+      child.render(buf, x, cy, width, ch, currentStyle)  # 子を描画
       cy += ch + w.gap  # 次の子の配置位置を計算 (高さ + 隙間)
 
   of wkHBox:
+    if not w.vhboxStyle.bg.isDefault:
+        for cy in 0 ..< height:
+            for cx in 0 ..< width:
+                if x + cx < buf.width and y + cy < buf.height:
+                    buf.setCell(x + cx, y + cy, newCell(" ", w.vhboxStyle))
+      
+    var currentStyle = parentStyle
+    if not w.vhboxStyle.bg.isDefault:
+        currentStyle.bg = w.vhboxStyle.bg
     # 子ウィジェットを左から順に配置
     var cx = x
     for i, child in w.children:
       if i > 0: cx += w.gap  # 2子目以降に隙間を空ける
       let (cw, ch) = child.measure(width)  # 子のサイズを取得
-      child.render(buf, cx, y, cw, ch)     # 子を描画
+      child.render(buf, cx, y, cw, ch, currentStyle)     # 子を描画
       cx += cw  # 次の子の配置位置を計算
 
   of wkCenter:
-    # 子ウィジェットをボックス内で中央寄せに配置
-    # まず子の合計高さを計算
+    if not parentStyle.bg.isDefault:
+        for cy in 0 ..< height:
+            for cx in 0 ..< width:
+                if x + cx < buf.width and y + cy < buf.height:
+                    buf.setCell(x + cx, y + cy, newCell(" ", parentStyle))
+      
     var totalChildH = 0
     for child in w.centerChildren:
-      let (_, ch) = child.measure(w.centerW)
-      totalChildH += ch
-    # 実際のボックス高さ (指定値と子の合計の大きい方)
-    let innerH = max(w.centerH, totalChildH)
-    # 水平・垂直のオフセットを計算 (中央寄せ)
-    let offsetX = (width - w.centerW) div 2
-    let offsetY = (height - innerH) div 2
-    # 子を縦に積んで描画
+        let (_, ch) = child.measure(w.centerW)
+        totalChildH += ch
+    
+    let targetH = max(w.centerH, totalChildH)
+        
+    let offsetX = max(0, (width - w.centerW) div 2)
+    let offsetY = max(0, (height - targetH) div 2)
+    
     var cy = 0
     for child in w.centerChildren:
-      let (_, ch) = child.measure(w.centerW)
-      child.render(buf, x + offsetX, y + offsetY + cy, w.centerW, ch)
-      cy += ch
+        let (_, ch) = child.measure(w.centerW)
+        child.render(buf, x + offsetX, y + offsetY + cy, w.centerW, ch, parentStyle)
+        cy += ch
 
   of wkHeader:
     # 全幅を背景色で塗りつぶす
@@ -298,6 +376,10 @@ proc render*(w: Widget, buf: Buffer, x, y, width, height: int) =
     buf.drawString(x + 2, y, w.barText, w.barStyle)
 
   of wkProgress:
+    var effectiveStyle = w.progressStyle
+    if w.progressStyle.bg.isDefault and not parentStyle.bg.isDefault:
+        effectiveStyle.bg = parentStyle.bg
+        
     # プログレスバーの描画
     # 左右2文字ずつパディングがあるので、実効幅は width - 4
     let barW = max(0, width - 4)
@@ -308,13 +390,16 @@ proc render*(w: Widget, buf: Buffer, x, y, width, height: int) =
     # 各位置に █ (塗り済み) または ░ (未塗り) を配置
     for i in 0 ..< barW:
       let ch = if i < filled: "█" else: "░"
-      buf.setCell(x + 2 + i, y, newCell(ch, w.progressStyle))
-
+      buf.setCell(x + 2 + i, y, newCell(ch, effectiveStyle))
+      
   of wkSeparator:
+    var effectiveStyle = w.sepStyle
+    if w.sepStyle.bg.isDefault and not parentStyle.bg.isDefault:
+        effectiveStyle.bg = parentStyle.bg
     # 全幅に ─ (水平線) を描画
     for cx in 0 ..< width:
       if x + cx < buf.width:
-        buf.setCell(x + cx, y, newCell("─", w.sepStyle))
+        buf.setCell(x + cx, y, newCell("─", effectiveStyle))
 
   of wkSpacer:
     # 何も描画しない (空間を確保するだけ)

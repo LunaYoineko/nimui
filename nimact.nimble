@@ -1,5 +1,5 @@
 # Package
-version       = "0.3.0"
+version       = "0.4.0"
 author        = "LunaYoineko"
 description   = "A modern, async, component-based TUI framework for Nim"
 license       = "MIT"

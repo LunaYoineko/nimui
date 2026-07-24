@@ -155,11 +155,12 @@ proc run*(app: App, build: proc(): Widget) {.async.} =
         # ルート自身がvboxか、あるいはツリー直下を探索して最初に見つかったvbox / 特殊ウィジェットを探す
         if rootWidget.kind == wkVBox:
             targetVBox = rootWidget
-        else:
+        elif rootWidget.kind == wkCenter:
             # centerなどの子要素にvboxがある場合を検索
-            for child in rootWidget.children:
-                targetVBox = child
-                break
+            for child in rootWidget.centerChildren:
+                if child.kind == wkVBox:
+                    targetVBox = child
+                    break
         
         if targetVBox != nil:
             var contentChildren: seq[Widget] = @[]
@@ -172,35 +173,37 @@ proc run*(app: App, build: proc(): Widget) {.async.} =
             # 描画位置の決定
             let headerH = if dockedHeader != nil: 1 else: 0
             let footerH = if dockedFooter != nil: 1 else: 0
-            
-            # ヘッダーを最上部(y = 0)に固定描画
-            if dockedHeader != nil:
-                dockedHeader.render(nextBuffer, 0, 0, w, 1)
-                
-            # フッターを画面の最下部(y = h - 1)に確実に固定描画
-            if dockedFooter != nil:
-                dockedFooter.render(nextBuffer, 0, h - 1, w, 1)
                 
             # 中間コンテンツ領域の描画
             let contentY = headerH
             let contentH = max(0, h - headerH - footerH)
             
-            if contentChildren.len == 1:
-                contentChildren[0].render(nextBuffer, 0, contentY, w, contentH)
-            elif contentChildren.len > 1:
-                let contentVbox = Widget(kind: wkVBox, children: contentChildren, gap: targetVBox.gap)
+            if contentChildren.len > 0:
+                let contentVbox = Widget(
+                        kind: wkVBox,
+                        children: contentChildren,
+                        gap: targetVBox.gap,
+                        vhboxStyle: targetVBox.vhboxStyle
+                )
                 contentVbox.render(nextBuffer, 0, contentY, w, contentH)
-            else:
-                # vboxが存在しない場合は画面全体にそのまま描画
-                rootWidget.render(nextBuffer, 0, 0, w, h)
                 
-            # 差分描画 & バッファ更新
-            if app.currentBuffer == nil or app.currentBuffer.width != w or app.currentBuffer.height != h:
-                app.currentBuffer = newBuffer(w, h)
+            if dockedHeader != nil:
+                dockedHeader.render(nextBuffer, 0, 0, w, 1)
                 
-            renderDiff(app.currentBuffer, nextBuffer)
-            app.currentBuffer = nextBuffer
+            if dockedFooter != nil:
+                dockedFooter.render(nextBuffer, 0, h - 1, w, 1)
+                
+        else:
+            # vboxが存在しない場合は画面全体にそのまま描画
+            rootWidget.render(nextBuffer, 0, 0, w, h)
+                
+        # 差分描画 & バッファ更新
+        if app.currentBuffer == nil or app.currentBuffer.width != w or app.currentBuffer.height != h:
+            app.currentBuffer = newBuffer(w, h)
+                
+        renderDiff(app.currentBuffer, nextBuffer)
+        app.currentBuffer = nextBuffer
             
             
-            # 60FPSウェイト
-            await sleepAsync(16)
+        # 60FPSウェイト
+        await sleepAsync(16)

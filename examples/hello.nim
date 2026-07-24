@@ -7,7 +7,7 @@
 ## =============================================================================
 
 import std/asyncdispatch
-import nimact
+import ../src/nimact
 
 let app = newApp()
 
